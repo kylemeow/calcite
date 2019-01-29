@@ -49,6 +49,15 @@ public class DruidDateRangeRulesTest {
         is("[2014-06-01T00:00:00.000Z/2014-07-01T00:00:00.000Z]"));
   }
 
+  @Test public void testRangeCalc() {
+    final Fixture2 f = new Fixture2();
+    checkDateRange(f,
+        f.and(
+            f.le(f.timestampLiteral(2011, Calendar.JANUARY, 1), f.t),
+            f.le(f.t, f.timestampLiteral(2012, Calendar.FEBRUARY, 2))),
+        is("[2011-01-01T00:00:00.000Z/2012-02-02T00:00:00.001Z]"));
+  }
+
   @Test public void testExtractYearAndDayFromDateColumn() {
     final Fixture2 f = new Fixture2();
     // AND(AND(>=($8, 2010-01-01), <($8, 2011-01-01)),
@@ -143,7 +152,7 @@ public class DruidDateRangeRulesTest {
       Matcher<String> intervalMatcher) {
     e = DateRangeRules.replaceTimeUnits(f.rexBuilder, e, "UTC");
     final List<Interval> intervals =
-        DruidDateTimeUtils.createInterval(e, "UTC");
+        DruidDateTimeUtils.createInterval(e);
     assertThat(intervals, notNullValue());
     assertThat(intervals.toString(), intervalMatcher);
   }
@@ -152,7 +161,7 @@ public class DruidDateRangeRulesTest {
     e = DateRangeRules.replaceTimeUnits(f.rexBuilder, e, "UTC");
     final RexNode e2 = f.simplify.simplify(e);
     List<Interval> intervals =
-        DruidDateTimeUtils.createInterval(e2, "UTC");
+        DruidDateTimeUtils.createInterval(e2);
     if (intervals == null) {
       throw new AssertionError("null interval");
     }
@@ -174,6 +183,14 @@ public class DruidDateRangeRulesTest {
       exDay = rexBuilder.makeCall(intRelDataType,
           SqlStdOperatorTable.EXTRACT,
           ImmutableList.of(rexBuilder.makeFlag(TimeUnitRange.DAY), ts));
+    }
+
+    public RexNode timestampLiteral(int year, int month, int day) {
+      final Calendar c = Util.calendar();
+      c.clear();
+      c.set(year, month, day);
+      final TimestampString ts = TimestampString.fromCalendarFields(c);
+      return timestampLiteral(ts);
     }
   }
 }

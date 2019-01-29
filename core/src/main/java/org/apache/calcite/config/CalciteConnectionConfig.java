@@ -32,6 +32,8 @@ public interface CalciteConnectionConfig extends ConnectionConfig {
   boolean approximateTopN();
   /** @see CalciteConnectionProperty#APPROXIMATE_DECIMAL */
   boolean approximateDecimal();
+  /** @see CalciteConnectionProperty#NULL_EQUAL_TO_EMPTY */
+  boolean nullEqualToEmpty();
   /** @see CalciteConnectionProperty#AUTO_TEMP */
   boolean autoTemp();
   /** @see CalciteConnectionProperty#MATERIALIZATIONS_ENABLED */
@@ -68,6 +70,8 @@ public interface CalciteConnectionConfig extends ConnectionConfig {
   <T> T typeSystem(Class<T> typeSystemClass, T defaultTypeSystem);
   /** @see CalciteConnectionProperty#CONFORMANCE */
   SqlConformance conformance();
+  /** @see CalciteConnectionProperty#TIME_ZONE */
+  @Override String timeZone();
 }
 
 // End CalciteConnectionConfig.java

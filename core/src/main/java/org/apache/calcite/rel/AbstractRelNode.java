@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Base class for every relational expression ({@link RelNode}).
@@ -59,11 +60,8 @@ import java.util.Set;
 public abstract class AbstractRelNode implements RelNode {
   //~ Static fields/initializers ---------------------------------------------
 
-  // TODO jvs 10-Oct-2003:  Make this thread safe.  Either synchronize, or
-  // keep this per-VolcanoPlanner.
-
   /** Generator for {@link #id} values. */
-  static int nextId = 0;
+  private static final AtomicInteger NEXT_ID = new AtomicInteger(0);
 
   private static final Logger LOGGER = CalciteTrace.getPlannerTracer();
 
@@ -95,7 +93,7 @@ public abstract class AbstractRelNode implements RelNode {
   /**
    * unique id of this object -- for debugging
    */
-  protected int id;
+  protected final int id;
 
   /**
    * The RelTraitSet that describes the traits of this RelNode.
@@ -112,7 +110,7 @@ public abstract class AbstractRelNode implements RelNode {
     assert cluster != null;
     this.cluster = cluster;
     this.traitSet = traitSet;
-    this.id = nextId++;
+    this.id = NEXT_ID.getAndIncrement();
     this.digest = getRelTypeName() + "#" + id;
     this.desc = digest;
     LOGGER.trace("new {}", digest);
@@ -356,13 +354,10 @@ public abstract class AbstractRelNode implements RelNode {
 
   public String recomputeDigest() {
     String tempDigest = computeDigest();
-    assert tempDigest != null : "post: return != null";
-    String prefix = "rel#" + id + ":";
+    assert tempDigest != null : "computeDigest() should be non-null";
 
-    // Substring uses the same underlying array of chars, so saves a bit
-    // of memory.
-    this.desc = prefix + tempDigest;
-    this.digest = this.desc.substring(prefix.length());
+    this.desc = "rel#" + id + ":" + tempDigest;
+    this.digest = tempDigest;
     return this.digest;
   }
 
@@ -414,7 +409,16 @@ public abstract class AbstractRelNode implements RelNode {
               if (j++ > 0) {
                 pw.write(",");
               }
-              pw.write(value.left + "=" + value.right);
+              pw.write(value.left);
+              pw.write("=");
+              if (value.right instanceof RelNode) {
+                RelNode input = (RelNode) value.right;
+                pw.write(input.getRelTypeName());
+                pw.write("#");
+                pw.write(Integer.toString(input.getId()));
+              } else {
+                pw.write(String.valueOf(value.right));
+              }
             }
             pw.write(")");
           }
